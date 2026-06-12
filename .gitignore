@@ -50,3 +50,13 @@ Thumbs.db
 *.7z
 *.tmp
 *.temp
+# Additional cache files
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# Additional large/binary packages
+*.iso
+*.dmg
+*.msi
+*.exe
