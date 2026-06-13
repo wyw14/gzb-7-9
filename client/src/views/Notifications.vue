@@ -94,6 +94,10 @@ const typeConfig = {
   invitation_accepted: { label: '邀约接受', icon: 'CircleCheck', cls: 'type-invite' },
   invitation_rejected: { label: '邀约拒绝', icon: 'CircleClose', cls: 'type-invite' },
   invitation_completed: { label: '邀约完成', icon: 'CircleCheck', cls: 'type-invite' },
+  audition_request: { label: '试奏预约', icon: 'MagicStick', cls: 'type-audition' },
+  audition_accepted: { label: '试奏接受', icon: 'CircleCheck', cls: 'type-audition' },
+  audition_rejected: { label: '试奏拒绝', icon: 'CircleClose', cls: 'type-audition' },
+  audition_completed: { label: '试奏完成', icon: 'CircleCheck', cls: 'type-audition' },
   review_received: { label: '互评完成', icon: 'Star', cls: 'type-review' }
 }
 
@@ -198,6 +202,10 @@ onMounted(() => {
   background: linear-gradient(135deg, #ec4899, #db2777);
 }
 
+.type-audition {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
 .type-default {
   background: linear-gradient(135deg, #6b7280, #4b5563);
 }
@@ -243,6 +251,10 @@ onMounted(() => {
 
 .notif-type-badge.type-review {
   background: #ec4899;
+}
+
+.notif-type-badge.type-audition {
+  background: #8b5cf6;
 }
 
 .notif-type-badge.type-default {

@@ -211,6 +211,7 @@ const submitInvite = async () => {
     await invitationApi.create({
       inviterId: userStore.userId,
       inviteeId: currentBuddy.value.id,
+      category: 'practice',
       instrument: inviteForm.instrument,
       piece: inviteForm.piece,
       skillLevelMatch: `${userStore.currentUser.skillLevel}-${currentBuddy.value.skillLevel}`,

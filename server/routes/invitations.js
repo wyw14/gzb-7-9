@@ -115,6 +115,7 @@ router.post('/', (req, res) => {
   const newInvitation = {
     id: 'inv' + uuidv4().slice(0, 8),
     ...req.body,
+    category: req.body.category || 'practice',
     status: 'pending',
     createdAt: new Date().toISOString()
   };
@@ -124,13 +125,20 @@ router.post('/', (req, res) => {
 
   const users = readJSON('users.json', []);
   const inviter = users.find(u => u.id === newInvitation.inviterId);
+  const category = newInvitation.category || 'practice';
+  
   if (newInvitation.inviteeId) {
+    const type = category === 'audition' ? 'audition_request' : 'invitation_request';
+    const title = category === 'audition' ? '新的试奏预约' : '新的练习邀约';
+    const content = category === 'audition'
+      ? `${inviter?.username || '用户'} 预约试奏您的乐器`
+      : `${inviter?.username || '用户'} 邀请你一起练琴`;
     createNotification({
       userId: newInvitation.inviteeId,
-      type: 'invitation_request',
-      title: '新的练习邀约',
-      content: `${inviter?.username || '用户'} 邀请你一起练琴`,
-      data: { invitationId: newInvitation.id, inviterId: newInvitation.inviterId }
+      type,
+      title,
+      content,
+      data: { invitationId: newInvitation.id, inviterId: newInvitation.inviterId, category }
     });
   }
 
@@ -163,41 +171,60 @@ router.put('/:id', (req, res) => {
   const users = readJSON('users.json', []);
   const invitee = users.find(u => u.id === invitations[idx].inviteeId);
   const inviter = users.find(u => u.id === invitations[idx].inviterId);
+  const category = invitations[idx].category || 'practice';
 
   if (newStatus === 'accepted' && oldStatus !== 'accepted') {
+    const type = category === 'audition' ? 'audition_accepted' : 'invitation_accepted';
+    const title = category === 'audition' ? '试奏预约已接受' : '邀约已接受';
+    const content = category === 'audition'
+      ? `${invitee?.username || '用户'} 已接受您的试奏预约`
+      : `${invitee?.username || '用户'} 已接受你的练琴邀约`;
     createNotification({
       userId: invitations[idx].inviterId,
-      type: 'invitation_accepted',
-      title: '邀约已接受',
-      content: `${invitee?.username || '用户'} 已接受你的练琴邀约`,
-      data: { invitationId: invitations[idx].id, inviteeId: invitations[idx].inviteeId }
+      type,
+      title,
+      content,
+      data: { invitationId: invitations[idx].id, inviteeId: invitations[idx].inviteeId, category }
     });
   }
 
   if (newStatus === 'rejected' && oldStatus !== 'rejected') {
+    const type = category === 'audition' ? 'audition_rejected' : 'invitation_rejected';
+    const title = category === 'audition' ? '试奏预约被婉拒' : '邀约被婉拒';
+    const content = category === 'audition'
+      ? `${invitee?.username || '用户'} 婉拒了您的试奏预约`
+      : `${invitee?.username || '用户'} 婉拒了你的练琴邀约`;
     createNotification({
       userId: invitations[idx].inviterId,
-      type: 'invitation_rejected',
-      title: '邀约被婉拒',
-      content: `${invitee?.username || '用户'} 婉拒了你的练琴邀约`,
-      data: { invitationId: invitations[idx].id, inviteeId: invitations[idx].inviteeId }
+      type,
+      title,
+      content,
+      data: { invitationId: invitations[idx].id, inviteeId: invitations[idx].inviteeId, category }
     });
   }
 
   if (newStatus === 'completed' && oldStatus !== 'completed') {
+    const type = category === 'audition' ? 'audition_completed' : 'invitation_completed';
+    const title = category === 'audition' ? '试奏已完成' : '练琴已完成';
+    const content1 = category === 'audition'
+      ? `与 ${invitee?.username || '用户'} 的试奏已完成，请互评`
+      : `与 ${invitee?.username || '用户'} 的练琴已标记完成，请互评`;
+    const content2 = category === 'audition'
+      ? `与 ${inviter?.username || '用户'} 的试奏已完成，请互评`
+      : `与 ${inviter?.username || '用户'} 的练琴已标记完成，请互评`;
     createNotification({
       userId: invitations[idx].inviterId,
-      type: 'invitation_completed',
-      title: '练琴已完成',
-      content: `与 ${invitee?.username || '用户'} 的练琴已标记完成，请互评`,
-      data: { invitationId: invitations[idx].id }
+      type,
+      title,
+      content: content1,
+      data: { invitationId: invitations[idx].id, category }
     });
     createNotification({
       userId: invitations[idx].inviteeId,
-      type: 'invitation_completed',
-      title: '练琴已完成',
-      content: `与 ${inviter?.username || '用户'} 的练琴已标记完成，请互评`,
-      data: { invitationId: invitations[idx].id }
+      type,
+      title,
+      content: content2,
+      data: { invitationId: invitations[idx].id, category }
     });
   }
   

@@ -48,9 +48,13 @@
                 <el-icon><Wallet /></el-icon>
                 {{ isOwner ? '这是您发布的乐器' : instrument.status === 'available' ? '申请借用' : '暂不可借' }}
               </el-button>
-              <el-button size="large" :disabled="isOwner" @click="showInvite = true">
+              <el-button size="large" :disabled="isOwner" @click="openInviteDialog('practice')">
                 <el-icon><ChatDotRound /></el-icon>
-                邀约主人练琴
+                邀约练琴
+              </el-button>
+              <el-button type="success" size="large" :disabled="instrument.status !== 'available' || isOwner" @click="openInviteDialog('audition')">
+                <el-icon><MagicStick /></el-icon>
+                预约试奏
               </el-button>
             </div>
           </div>
@@ -139,32 +143,39 @@
       </template>
     </el-dialog>
     
-    <el-dialog v-model="showInvite" title="邀约练琴" width="500px">
+    <el-dialog v-model="showInvite" :title="inviteForm.category === 'audition' ? '预约试奏' : '邀约练琴'" width="500px">
       <el-form :model="inviteForm" label-width="90px">
+        <el-form-item v-if="inviteForm.category" label="邀约类型">
+          <el-tag :type="inviteForm.category === 'audition' ? 'success' : 'primary'">
+            {{ inviteForm.category === 'audition' ? '试奏预约' : '练习邀约' }}
+          </el-tag>
+        </el-form-item>
         <el-form-item label="想练乐器">
-          <el-input v-model="inviteForm.instrument" placeholder="如：古典吉他二重奏" />
+          <el-input v-model="inviteForm.instrument" :placeholder="inviteForm.category === 'audition' ? '如：想试奏您的' + instrument.name : '如：古典吉他二重奏'" />
         </el-form-item>
         <el-form-item label="想练曲目">
-          <el-input v-model="inviteForm.piece" placeholder="如：爱的罗曼史" />
+          <el-input v-model="inviteForm.piece" :placeholder="inviteForm.category === 'audition' ? '如：想试弹某曲目' : '如：爱的罗曼史'" />
         </el-form-item>
         <el-form-item label="约练时间">
           <el-date-picker
             v-model="inviteForm.meetTime"
             type="datetime"
-            placeholder="选择约练时间"
+            :placeholder="inviteForm.category === 'audition' ? '选择试奏时间' : '选择约练时间'"
             style="width: 100%"
           />
         </el-form-item>
         <el-form-item label="约练地点">
-          <el-input v-model="inviteForm.location" placeholder="建议选公共空间：咖啡馆/音乐教室等" />
+          <el-input v-model="inviteForm.location" :placeholder="inviteForm.category === 'audition' ? '建议选您方便的地方' : '建议选公共空间：咖啡馆/音乐教室等'" />
         </el-form-item>
         <el-form-item label="留言">
-          <el-input v-model="inviteForm.message" type="textarea" :rows="3" placeholder="想说点什么..." />
+          <el-input v-model="inviteForm.message" type="textarea" :rows="3" :placeholder="inviteForm.category === 'audition' ? '想说明的试奏细节...' : '想说点什么...'" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showInvite = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitInvite">发送邀约</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitInvite">
+          {{ inviteForm.category === 'audition' ? '发送试奏预约' : '发送邀约' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -195,6 +206,7 @@ const borrowForm = reactive({
 })
 
 const inviteForm = reactive({
+  category: 'practice',
   instrument: '',
   piece: '',
   meetTime: null,
@@ -217,13 +229,23 @@ const disabledDate = (time) => {
 onMounted(async () => {
   try {
     instrument.value = await instrumentApi.get(route.params.id)
-    inviteForm.value.instrument = instrument.value.category
+    inviteForm.instrument = instrument.value.category
     
     ownerReviews.value = await reviewApi.list({ revieweeId: instrument.value.ownerId, targetType: 'user' })
   } catch (e) {
     ElMessage.error('加载失败')
   }
 })
+
+const openInviteDialog = (category) => {
+  inviteForm.category = category
+  inviteForm.instrument = instrument.value.category
+  inviteForm.piece = ''
+  inviteForm.meetTime = null
+  inviteForm.location = ''
+  inviteForm.message = ''
+  showInvite.value = true
+}
 
 const submitBorrow = async () => {
   if (!userStore.isLoggedIn) {
@@ -272,6 +294,7 @@ const submitInvite = async () => {
     await invitationApi.create({
       inviterId: userStore.userId,
       inviteeId: instrument.value.ownerId,
+      category: inviteForm.category,
       instrument: inviteForm.instrument,
       piece: inviteForm.piece,
       skillLevelMatch: `${userStore.currentUser.skillLevel}-${instrument.value.owner?.skillLevel}`,
@@ -281,7 +304,7 @@ const submitInvite = async () => {
       longitude: instrument.value.longitude,
       message: inviteForm.message
     })
-    ElMessage.success('邀约已发送，期待好消息！')
+    ElMessage.success(inviteForm.category === 'audition' ? '试奏预约已发送！' : '邀约已发送，期待好消息！')
     showInvite.value = false
     router.push('/messages')
   } catch (e) {

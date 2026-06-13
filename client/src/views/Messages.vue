@@ -3,7 +3,7 @@
     <div class="page-header">
       <div class="container">
         <h1>📬 消息中心</h1>
-        <p>管理你的借用申请、练琴邀约和互动消息</p>
+        <p>管理你的借用申请、练习邀约、试奏预约和互动消息</p>
       </div>
     </div>
     
@@ -119,7 +119,7 @@
           </template>
           
           <div class="section">
-            <h3>收到的练琴邀约</h3>
+            <h3>收到的邀约（练习/试奏）</h3>
             <div v-if="invitationsAsInvitee.length" class="msg-list">
               <div v-for="inv in invitationsAsInvitee" :key="inv.id" class="msg-item card">
                 <div class="msg-avatar">
@@ -127,7 +127,9 @@
                 </div>
                 <div class="msg-content">
                   <div class="msg-title">
-                    <b>{{ inv.inviter?.username }}</b> 邀请你一起练琴
+                    <el-tag v-if="inv.category === 'audition'" type="success" size="small">试奏预约</el-tag>
+                    <el-tag v-else type="primary" size="small">练习邀约</el-tag>
+                    <b>{{ inv.inviter?.username }}</b> {{ inv.category === 'audition' ? '预约试奏您的乐器' : '邀请你一起练琴' }}
                     <span class="badge" :class="statusClass(inv.status)">{{ statusText(inv.status) }}</span>
                     <span v-if="inv.status === 'completed'" class="review-status">
                       <el-tag v-if="inv.inviteeReviewed" type="success" size="small">您已评价</el-tag>
@@ -144,7 +146,7 @@
                   <div class="msg-actions" v-if="inv.status === 'pending'">
                     <el-button type="success" size="small" @click="updateInvitation(inv, 'accepted')">
                       <el-icon><CircleCheck /></el-icon>
-                      接受邀约
+                      {{ inv.category === 'audition' ? '接受试奏' : '接受邀约' }}
                     </el-button>
                     <el-button type="danger" size="small" @click="updateInvitation(inv, 'rejected')">
                       <el-icon><CircleClose /></el-icon>
@@ -154,13 +156,13 @@
                   <div class="msg-actions" v-if="inv.status === 'accepted'">
                     <el-button type="primary" size="small" @click="markInvitationCompleted(inv)">
                       <el-icon><CircleCheck /></el-icon>
-                      标记已完成（练琴后）
+                      {{ inv.category === 'audition' ? '标记已完成（试奏后）' : '标记已完成（练琴后）' }}
                     </el-button>
                   </div>
                   <div class="msg-actions" v-if="inv.status === 'completed' && inv.canReviewOther">
                     <el-button type="warning" size="small" @click="showReviewDialog(inv, 'invitation')">
                       <el-icon><Edit /></el-icon>
-                      评价邀约人
+                      {{ inv.category === 'audition' ? '评价试奏伙伴' : '评价邀约人' }}
                     </el-button>
                   </div>
                   <div class="msg-actions" v-if="inv.status === 'completed' && inv.inviteeReviewed">
@@ -173,7 +175,7 @@
           </div>
           
           <div class="section">
-            <h3>我发出的邀约</h3>
+            <h3>我发出的邀约（练习/试奏）</h3>
             <div v-if="invitationsAsInviter.length" class="msg-list">
               <div v-for="inv in invitationsAsInviter" :key="inv.id" class="msg-item card">
                 <div class="msg-avatar">
@@ -181,7 +183,9 @@
                 </div>
                 <div class="msg-content">
                   <div class="msg-title">
-                    你邀约 <b>{{ inv.invitee?.username }}</b> 练琴
+                    <el-tag v-if="inv.category === 'audition'" type="success" size="small">试奏预约</el-tag>
+                    <el-tag v-else type="primary" size="small">练习邀约</el-tag>
+                    你{{ inv.category === 'audition' ? '预约' : '邀约' }} <b>{{ inv.invitee?.username }}</b> {{ inv.category === 'audition' ? '试奏' : '练琴' }}
                     <span class="badge" :class="statusClass(inv.status)">{{ statusText(inv.status) }}</span>
                     <span v-if="inv.status === 'completed'" class="review-status">
                       <el-tag v-if="inv.inviterReviewed" type="success" size="small">您已评价</el-tag>
@@ -198,13 +202,13 @@
                   <div class="msg-actions" v-if="inv.status === 'accepted'">
                     <el-button type="primary" size="small" @click="markInvitationCompleted(inv)">
                       <el-icon><CircleCheck /></el-icon>
-                      标记已完成（练琴后）
+                      {{ inv.category === 'audition' ? '标记已完成（试奏后）' : '标记已完成（练琴后）' }}
                     </el-button>
                   </div>
                   <div class="msg-actions" v-if="inv.status === 'completed' && inv.canReviewOther">
                     <el-button type="warning" size="small" @click="showReviewDialog(inv, 'invitation')">
                       <el-icon><Edit /></el-icon>
-                      评价陪练伙伴
+                      {{ inv.category === 'audition' ? '评价试奏伙伴' : '评价陪练伙伴' }}
                     </el-button>
                   </div>
                   <div class="msg-actions" v-if="inv.status === 'completed' && inv.inviterReviewed">
@@ -352,15 +356,22 @@ const confirmReturn = async (b) => {
 }
 
 const updateInvitation = async (inv, status) => {
+  const isAudition = inv.category === 'audition'
   try {
-    await ElMessageBox.confirm(`确认${status === 'accepted' ? '接受' : '拒绝'}该邀约？`, '提示', {
-      type: status === 'accepted' ? 'success' : 'warning'
-    })
+    await ElMessageBox.confirm(
+      `确认${status === 'accepted' ? '接受' : '拒绝'}该${isAudition ? '试奏预约' : '邀约'}？`,
+      '提示',
+      { type: status === 'accepted' ? 'success' : 'warning' }
+    )
   } catch { return }
   
   try {
     await invitationApi.update(inv.id, { status })
-    ElMessage.success(status === 'accepted' ? '已接受邀约，一起开心练琴吧~' : '已婉拒邀约')
+    if (status === 'accepted') {
+      ElMessage.success(isAudition ? '已接受试奏预约，期待见面~' : '已接受邀约，一起开心练琴吧~')
+    } else {
+      ElMessage.success(isAudition ? '已婉拒试奏预约' : '已婉拒邀约')
+    }
     await loadAll()
   } catch (e) {
     ElMessage.error('操作失败')
@@ -368,13 +379,18 @@ const updateInvitation = async (inv, status) => {
 }
 
 const markInvitationCompleted = async (inv) => {
+  const isAudition = inv.category === 'audition'
   try {
-    await ElMessageBox.confirm('确认本次练琴已完成？确认后双方可以进行互评。', '完成确认', { type: 'success' })
+    await ElMessageBox.confirm(
+      `确认本次${isAudition ? '试奏' : '练琴'}已完成？确认后双方可以进行互评。`,
+      '完成确认',
+      { type: 'success' }
+    )
   } catch { return }
   
   try {
     await invitationApi.update(inv.id, { status: 'completed' })
-    ElMessage.success('已标记完成，记得给对方一个评价~')
+    ElMessage.success(isAudition ? '试奏已标记完成，记得给对方一个评价~' : '已标记完成，记得给对方一个评价~')
     await loadAll()
   } catch (e) {
     ElMessage.error('操作失败')
@@ -397,8 +413,9 @@ const showReviewDialog = (target, type) => {
   } else {
     const isInviter = userStore.userId === target.inviterId
     const reviewee = isInviter ? target.invitee : target.inviter
-    reviewForm.title = '评价陪练伙伴'
-    reviewForm.context = '陪练邀约'
+    const isAudition = target.category === 'audition'
+    reviewForm.title = isAudition ? '评价试奏伙伴' : '评价陪练伙伴'
+    reviewForm.context = isAudition ? '试奏预约' : '陪练邀约'
     reviewForm.revieweeId = reviewee?.id
     reviewForm.revieweeName = reviewee?.username
     reviewForm.revieweeAvatar = reviewee?.avatar
