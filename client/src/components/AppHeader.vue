@@ -31,8 +31,8 @@
             <el-icon><Plus /></el-icon>
             发布闲置
           </router-link>
-          <router-link to="/messages" class="icon-btn" title="消息">
-            <el-badge :value="unreadCount" :hidden="unreadCount === 0">
+          <router-link to="/notifications" class="icon-btn" title="通知">
+            <el-badge :value="notifStore.unreadCount" :hidden="notifStore.unreadCount === 0">
               <el-icon size="20"><Bell /></el-icon>
             </el-badge>
           </router-link>
@@ -52,6 +52,9 @@
                 </el-dropdown-item>
                 <el-dropdown-item command="messages">
                   <el-icon><Message /></el-icon>消息中心
+                </el-dropdown-item>
+                <el-dropdown-item command="notifications">
+                  <el-icon><Bell /></el-icon>通知中心
                 </el-dropdown-item>
                 <el-dropdown-item divided command="logout">
                   <el-icon><SwitchButton /></el-icon>退出登录
@@ -74,15 +77,14 @@
 import { ref, computed, inject, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
-import { borrowApi, invitationApi } from '../api'
+import { useNotificationStore } from '../stores/notifications'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const userStore = useUserStore()
+const notifStore = useNotificationStore()
 const router = useRouter()
 const route = useRoute()
 const requireLogin = inject('requireLogin', () => router.push('/login'))
-
-const unreadCount = ref(0)
 
 const goLogin = () => {
   router.push('/login')
@@ -98,6 +100,9 @@ const handleCommand = (cmd) => {
       break
     case 'messages':
       router.push('/messages')
+      break
+    case 'notifications':
+      router.push('/notifications')
       break
     case 'logout':
       ElMessageBox.confirm('确定要退出登录吗？', '提示', {
@@ -115,13 +120,7 @@ const handleCommand = (cmd) => {
 
 onMounted(async () => {
   if (userStore.isLoggedIn) {
-    try {
-      const [borrows, invitations] = await Promise.all([
-        borrowApi.list({ ownerId: userStore.userId, status: 'pending' }),
-        invitationApi.list({ inviteeId: userStore.userId, status: 'pending' })
-      ])
-      unreadCount.value = borrows.length + invitations.length
-    } catch (e) {}
+    notifStore.fetchUnreadCount()
   }
 })
 </script>

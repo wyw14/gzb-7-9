@@ -68,4 +68,11 @@ export const recommendApi = {
   pieces: (userId) => api.get(`/recommendations/pieces/${userId}`)
 }
 
+export const notificationApi = {
+  list: (params) => api.get('/notifications', { params }),
+  unreadCount: (userId) => api.get('/notifications/unread-count', { params: { userId } }),
+  markRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllRead: (userId) => api.put('/notifications/read-all', { userId })
+}
+
 export default api

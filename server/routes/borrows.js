@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { readJSON, writeJSON } = require('../utils/storage');
+const { createNotification } = require('./notifications');
 
 const router = express.Router();
 
@@ -94,7 +95,21 @@ router.post('/', (req, res) => {
   
   borrows.push(newBorrow);
   writeJSON('borrows.json', borrows);
-  
+
+  const instruments = readJSON('instruments.json', []);
+  const users = readJSON('users.json', []);
+  const inst = instruments.find(i => i.id === newBorrow.instrumentId);
+  const borrower = users.find(u => u.id === newBorrow.borrowerId);
+  if (newBorrow.ownerId) {
+    createNotification({
+      userId: newBorrow.ownerId,
+      type: 'borrow_request',
+      title: '新的借用申请',
+      content: `${borrower?.username || '用户'} 申请借用您的「${inst?.name || '乐器'}」`,
+      data: { borrowId: newBorrow.id, instrumentId: newBorrow.instrumentId, borrowerId: newBorrow.borrowerId }
+    });
+  }
+
   res.json({ success: true, borrow: newBorrow });
 });
 
@@ -120,10 +135,29 @@ router.put('/:id', (req, res) => {
       instruments[instIdx].status = 'borrowed';
       writeJSON('instruments.json', instruments);
     }
+    const inst = instruments.find(i => i.id === borrows[idx].instrumentId);
+    createNotification({
+      userId: borrows[idx].borrowerId,
+      type: 'borrow_confirmed',
+      title: '借用申请已通过',
+      content: `您申请借用「${inst?.name || '乐器'}」已通过，请按时取用`,
+      data: { borrowId: borrows[idx].id, instrumentId: borrows[idx].instrumentId }
+    });
   }
   
   if (newStatus === 'borrowing' && oldStatus === 'confirmed') {
     borrows[idx].status = 'borrowing';
+  }
+
+  if (newStatus === 'rejected' && oldStatus !== 'rejected') {
+    const inst = instruments.find(i => i.id === borrows[idx].instrumentId);
+    createNotification({
+      userId: borrows[idx].borrowerId,
+      type: 'borrow_rejected',
+      title: '借用申请被拒绝',
+      content: `您申请借用「${inst?.name || '乐器'}」被拒绝`,
+      data: { borrowId: borrows[idx].id, instrumentId: borrows[idx].instrumentId }
+    });
   }
   
   if (newStatus === 'returned' && oldStatus !== 'returned') {
@@ -134,6 +168,21 @@ router.put('/:id', (req, res) => {
       instruments[instIdx].status = 'available';
       writeJSON('instruments.json', instruments);
     }
+    const inst = instruments.find(i => i.id === borrows[idx].instrumentId);
+    createNotification({
+      userId: borrows[idx].borrowerId,
+      type: 'borrow_returned',
+      title: '乐器归还确认',
+      content: `您借用的「${inst?.name || '乐器'}」已被确认归还，请互评`,
+      data: { borrowId: borrows[idx].id, instrumentId: borrows[idx].instrumentId }
+    });
+    createNotification({
+      userId: borrows[idx].ownerId,
+      type: 'borrow_returned',
+      title: '乐器归还确认',
+      content: `您出借的「${inst?.name || '乐器'}」已确认归还，请互评`,
+      data: { borrowId: borrows[idx].id, instrumentId: borrows[idx].instrumentId }
+    });
   }
   
   writeJSON('borrows.json', borrows);

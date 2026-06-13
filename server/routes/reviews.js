@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { readJSON, writeJSON } = require('../utils/storage');
+const { createNotification } = require('./notifications');
 
 const router = express.Router();
 
@@ -74,7 +75,16 @@ router.post('/', (req, res) => {
   
   reviews.push(newReview);
   writeJSON('reviews.json', reviews);
-  
+
+  const reviewer = users.find(u => u.id === newReview.reviewerId);
+  createNotification({
+    userId: newReview.revieweeId,
+    type: 'review_received',
+    title: '收到新评价',
+    content: `${reviewer?.username || '用户'} 对你进行了评价，评分 ${newReview.rating || 5} 分`,
+    data: { reviewerId: newReview.reviewerId, reviewId: newReview.id }
+  });
+
   const userIdx = users.findIndex(u => u.id === newReview.revieweeId);
   if (userIdx !== -1) {
     const userReviews = reviews.filter(r => r.revieweeId === newReview.revieweeId);

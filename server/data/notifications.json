@@ -1,0 +1,45 @@
+[
+  {
+    "id": "ne9b9ba86",
+    "userId": "u003",
+    "type": "borrow_request",
+    "title": "新的借用申请",
+    "content": "音乐小明 申请借用您的「红棉小提琴 4/4」",
+    "data": {
+      "borrowId": "ba8dfc34c",
+      "instrumentId": "i004",
+      "borrowerId": "u001"
+    },
+    "read": true,
+    "createdAt": "2026-06-12T19:30:52.519Z",
+    "readAt": "2026-06-12T19:31:47.780Z"
+  },
+  {
+    "id": "ndb7bc970",
+    "userId": "u003",
+    "type": "invitation_request",
+    "title": "??????",
+    "content": "???? ?????????",
+    "data": {
+      "invitationId": "inv001",
+      "inviterId": "u002"
+    },
+    "read": true,
+    "createdAt": "2026-06-12T19:32:11.077Z",
+    "readAt": "2026-06-12T19:32:27.832Z"
+  },
+  {
+    "id": "nf03adf51",
+    "userId": "u003",
+    "type": "review_received",
+    "title": "??????",
+    "content": "???? ????????? 5 ???",
+    "data": {
+      "reviewerId": "u001",
+      "reviewId": "r001"
+    },
+    "read": true,
+    "createdAt": "2026-06-12T19:32:11.085Z",
+    "readAt": "2026-06-12T19:32:27.832Z"
+  }
+]

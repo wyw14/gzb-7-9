@@ -12,5 +12,18 @@
     "status": "borrowing",
     "createdAt": "2026-06-08T10:00:00.000Z",
     "confirmedAt": "2026-06-09T14:00:00.000Z"
+  },
+  {
+    "id": "ba8dfc34c",
+    "startDate": "2026-06-20",
+    "instrumentId": "i004",
+    "depositPaid": 500,
+    "borrowerId": "u001",
+    "endDate": "2026-06-25",
+    "ownerId": "u003",
+    "purpose": "????????",
+    "feeTotal": 300,
+    "status": "pending",
+    "createdAt": "2026-06-12T19:30:52.518Z"
   }
 ]

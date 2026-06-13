@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { readJSON, writeJSON } = require('../utils/storage');
+const { createNotification } = require('./notifications');
 
 const router = express.Router();
 
@@ -120,7 +121,19 @@ router.post('/', (req, res) => {
   
   invitations.push(newInvitation);
   writeJSON('invitations.json', invitations);
-  
+
+  const users = readJSON('users.json', []);
+  const inviter = users.find(u => u.id === newInvitation.inviterId);
+  if (newInvitation.inviteeId) {
+    createNotification({
+      userId: newInvitation.inviteeId,
+      type: 'invitation_request',
+      title: '新的练习邀约',
+      content: `${inviter?.username || '用户'} 邀请你一起练琴`,
+      data: { invitationId: newInvitation.id, inviterId: newInvitation.inviterId }
+    });
+  }
+
   res.json({ success: true, invitation: newInvitation });
 });
 
@@ -146,6 +159,47 @@ router.put('/:id', (req, res) => {
       ? new Date().toISOString()
       : invitations[idx].completedAt
   };
+
+  const users = readJSON('users.json', []);
+  const invitee = users.find(u => u.id === invitations[idx].inviteeId);
+  const inviter = users.find(u => u.id === invitations[idx].inviterId);
+
+  if (newStatus === 'accepted' && oldStatus !== 'accepted') {
+    createNotification({
+      userId: invitations[idx].inviterId,
+      type: 'invitation_accepted',
+      title: '邀约已接受',
+      content: `${invitee?.username || '用户'} 已接受你的练琴邀约`,
+      data: { invitationId: invitations[idx].id, inviteeId: invitations[idx].inviteeId }
+    });
+  }
+
+  if (newStatus === 'rejected' && oldStatus !== 'rejected') {
+    createNotification({
+      userId: invitations[idx].inviterId,
+      type: 'invitation_rejected',
+      title: '邀约被婉拒',
+      content: `${invitee?.username || '用户'} 婉拒了你的练琴邀约`,
+      data: { invitationId: invitations[idx].id, inviteeId: invitations[idx].inviteeId }
+    });
+  }
+
+  if (newStatus === 'completed' && oldStatus !== 'completed') {
+    createNotification({
+      userId: invitations[idx].inviterId,
+      type: 'invitation_completed',
+      title: '练琴已完成',
+      content: `与 ${invitee?.username || '用户'} 的练琴已标记完成，请互评`,
+      data: { invitationId: invitations[idx].id }
+    });
+    createNotification({
+      userId: invitations[idx].inviteeId,
+      type: 'invitation_completed',
+      title: '练琴已完成',
+      content: `与 ${inviter?.username || '用户'} 的练琴已标记完成，请互评`,
+      data: { invitationId: invitations[idx].id }
+    });
+  }
   
   writeJSON('invitations.json', invitations);
   res.json({ success: true, invitation: invitations[idx] });
